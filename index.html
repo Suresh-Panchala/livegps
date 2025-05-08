@@ -33,7 +33,7 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   <script>
-    const client = mqtt.connect('ws://broker.hivemq.com:8000/mqtt');
+    const client = mqtt.connect('wss://broker.hivemq.com:8000/mqtt');
     const topic = 'embite/gps';
 
     let map = L.map('map').setView([17.318762, 78.565689], 15);
