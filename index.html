@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MQTT GPS Tracker</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <style>
+    #map { height: 60vh; margin-bottom: 20px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+  </style>
+</head>
+<body>
+  <h2>Live MQTT GPS Tracker</h2>
+  <div id="map"></div>
+  <h3>Location History</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Time</th>
+        <th>Date</th>
+        <th>Latitude</th>
+        <th>Longitude</th>
+        <th>Speed (km/h)</th>
+        <th>Course</th>
+      </tr>
+    </thead>
+    <tbody id="historyTable"></tbody>
+  </table>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <script>
+    const client = mqtt.connect('ws://broker.hivemq.com:8000/mqtt');
+    const topic = 'embite/gps';
+
+    let map = L.map('map').setView([17.318762, 78.565689], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19
+    }).addTo(map);
+
+    let marker = L.marker([17.318762, 78.565689]).addTo(map);
+
+    function updateHistory(data) {
+      const table = document.getElementById('historyTable');
+      const row = document.createElement('tr');
+      row.innerHTML = `<td>${data.time}</td><td>${data.date}</td><td>${data.lat}</td><td>${data.lon}</td><td>${data.speed}</td><td>${data.course}</td>`;
+      table.prepend(row);
+    }
+
+    client.on('connect', function () {
+      console.log('Connected to MQTT broker');
+      client.subscribe(topic, function (err) {
+        if (!err) {
+          console.log('Subscribed to topic:', topic);
+        }
+      });
+    });
+
+    client.on('message', function (topic, message) {
+      try {
+        const data = JSON.parse(message.toString());
+        if ('lat' in data && 'lon' in data) {
+          const lat = parseFloat(data.lat);
+          const lon = parseFloat(data.lon);
+          marker.setLatLng([lat, lon]);
+          map.setView([lat, lon]);
+          updateHistory(data);
+        }
+      } catch (err) {
+        console.error('Invalid JSON:', err);
+      }
+    });
+  </script>
+</body>
+</html>
